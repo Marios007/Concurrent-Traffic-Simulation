@@ -25,7 +25,7 @@ void MessageQueue<T>::send(T &&msg)
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     std::lock_guard<std::mutex> lock(_mutex);
     _queue.clear();
-    _queue.push_back(msg);
+    _queue.push_back(std::move(msg));
     _cond.notify_one();
 }
 
@@ -65,39 +65,29 @@ void TrafficLight::simulate()
 // virtual function which is executed in a thread
 void TrafficLight::cycleThroughPhases()
 {
-    // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles
-    // and toggles the current phase of the traffic light between red and green and sends an update method
-    // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds.
+    // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles 
+    // and toggles the current phase of the traffic light between red and green and sends an update method 
+    // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles.
 
-    std::chrono::time_point<std::chrono::system_clock> timeNow;
-    std::chrono::time_point<std::chrono::system_clock> timeLater;
-    double cycleDuration;
+    auto lastTime = std::chrono::system_clock::now();
+    //create a value from 0 to 2000 and add to 4000
+    //The cycle duration should be a random value between 4 and 6 seconds. 
+    auto waitTime = (std::rand() % 2000) + 4000;
 
-    //create a random number between 4 and 6
-    std::random_device rand;
-    std::mt19937 eng(rand());
-    std::uniform_int_distribution<int> distr(4000, 6000);
-    cycleDuration = distr(eng);
-    
-
-    timeNow = std::chrono::system_clock::now();
     while (true)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        timeLater = std::chrono::system_clock::now();
-        if ((std::chrono::duration_cast<std::chrono::milliseconds>(timeNow - timeLater).count()) >= cycleDuration)
-        {
-            if (_currentPhase == red)
-            {
-                _currentPhase = green;
-            }
-            else
-            {
-                _currentPhase = red;
-            }
-            timeNow = std::chrono::system_clock::now();
+        std::this_thread::sleep_for(std::chrono::microseconds(1));
+        auto elapsedTimeSinceLastClockTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastTime).count();
+
+        if(elapsedTimeSinceLastClockTime >= waitTime) {
+            _currentPhase = _currentPhase == TrafficLightPhase::red ? TrafficLightPhase::green : TrafficLightPhase::red;
+
             _queue.send(std::move(_currentPhase));
+
+            lastTime = std::chrono::system_clock::now();
+            waitTime = (std::rand() % 2000) + 4000;
         }
     }
+    
 }
