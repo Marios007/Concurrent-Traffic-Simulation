@@ -12,7 +12,7 @@ T MessageQueue<T>::receive()
     // The received object should then be returned by the receive function.
     std::unique_lock<std::mutex> lock(_mutex);
 
-    _cond.wait(lock, [this]{ return !_queue.empty(); });
+    _cond.wait(lock);
     T recieved = std::move(_queue.back());
     _queue.pop_back();
     return recieved;
@@ -24,8 +24,8 @@ void MessageQueue<T>::send(T &&msg)
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex>
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     std::lock_guard<std::mutex> lock(_mutex);
-
-    _queue.push_back(std::move(msg));
+    _queue.clear();
+    _queue.push_back(msg);
     _cond.notify_one();
 }
 
@@ -43,12 +43,12 @@ void TrafficLight::waitForGreen()
     // Once it receives TrafficLightPhase::green, the method returns.
     while (true)
     {
-        TrafficLightPhase trafficLightPhase = TrafficLight::_queue.receive();
-        if (trafficLightPhase == green)
+        if (_queue.receive() == TrafficLightPhase::green)
         {
             return;
         }
     }
+    return;
 }
 
 TrafficLightPhase TrafficLight::getCurrentPhase()
@@ -77,10 +77,9 @@ void TrafficLight::cycleThroughPhases()
     //create a random number between 4 and 6
     std::random_device rand;
     std::mt19937 eng(rand());
-
-    std::uniform_int_distribution<> distr(4000, 6000);
-
+    std::uniform_int_distribution<int> distr(4000, 6000);
     cycleDuration = distr(eng);
+    
 
     timeNow = std::chrono::system_clock::now();
     while (true)
@@ -98,7 +97,7 @@ void TrafficLight::cycleThroughPhases()
                 _currentPhase = red;
             }
             timeNow = std::chrono::system_clock::now();
-            TrafficLight::_queue.send(std::move(_currentPhase));
+            _queue.send(std::move(_currentPhase));
         }
     }
 }
