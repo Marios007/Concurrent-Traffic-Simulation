@@ -5,11 +5,6 @@
 #include <thread>
 #include <mutex>
 
-enum TrafficLightPhase
-{
-    green,
-    red,
-};
 
 enum ObjectType
 {
@@ -46,21 +41,5 @@ private:
     static int _idCnt; // global variable for counting object ids
 };
 
-class TrafficLight : public TrafficObject
-{
-public:
-    // construktor
-    TrafficLight();
-
-    void waitForGreen();
-    void simulate();
-    TrafficLightPhase getCurrentPhase();
-
-private:
-    void cycleThroughPhases();
-    TrafficLightPhase _currentPhase;
-
-
-};
 
 #endif
