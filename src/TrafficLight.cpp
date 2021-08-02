@@ -25,7 +25,7 @@ void MessageQueue<T>::send(T &&msg)
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
     std::lock_guard<std::mutex> lock(_mutex);
     _queue.clear();
-    _queue.push_back(std::move(msg));
+    _queue.emplace_back(std::move(msg));
     _cond.notify_one();
 }
 
@@ -74,19 +74,17 @@ void TrafficLight::cycleThroughPhases()
     //create a value from 0 to 2000 and add to 4000
     //The cycle duration should be a random value between 4 and 6 seconds. 
     auto waitTime = (std::rand() % 2000) + 4000;
-
     while (true)
     {
         std::this_thread::sleep_for(std::chrono::microseconds(1));
         auto elapsedTimeSinceLastClockTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastTime).count();
+
 
         if(elapsedTimeSinceLastClockTime >= waitTime) {
             _currentPhase = _currentPhase == TrafficLightPhase::red ? TrafficLightPhase::green : TrafficLightPhase::red;
 
             lastTime = std::chrono::system_clock::now();
             _queue.send(std::move(_currentPhase));
-            //waitTime = (std::rand() % 2000) + 4000;
         }
     }
-    
 }
